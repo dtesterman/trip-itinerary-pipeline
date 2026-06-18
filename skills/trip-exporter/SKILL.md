@@ -49,8 +49,10 @@ definitions and field-by-field guidance).
 Key rules:
 
 - **Every stop needs an `id`** in format `d{dayNumber}-s{stopIndex}` (e.g., `d1-s1`)
-- **Every stop needs `coords`** (lat/lng) for maps and route links. Look up precise
-  coordinates for each location. Stops without coords won't appear on the map.
+- **`coords` (lat/lng) are strongly recommended** for maps and route links. Look up
+  approximate coordinates for each place. They are *optional*: a stop without coords
+  is still valid — it simply won't render as a map pin (fine for meals, drives, or
+  transit-only entries).
 - **`placeholderEmoji`** is required — pick contextually relevant emoji
   (see schema reference for common emoji table)
 - **`mapUrl`** should be a Google Maps search URL for the location
@@ -59,12 +61,18 @@ Key rules:
   `mixed`, `departure`
 - **Stop status** should be `planned` for new trips
 
-Validate the JSON:
+Validate the JSON against the schema contract **before** wrapping it. This checks
+required fields, valid enum values (`category`, `pricing.type`, `status`,
+line-item `priceType`), `id` format and uniqueness, and that cost `totals` equal
+the sum of all line items. Missing `coords` are reported as warnings, not errors:
+
 ```bash
-node -e "const d = JSON.parse(require('fs').readFileSync('trip-data.json','utf8')); \
-  console.log('Valid:', d.name, '-', d.days.length, 'days,', \
-  d.days.reduce((s,d)=>s+d.stops.length,0), 'stops')"
+SKILL_DIR="<path-to-this-skill>"
+bash "$SKILL_DIR/scripts/validate-trip.sh" trip-data.json
 ```
+
+Fix every `FAIL:` line before continuing; review any `WARN:` lines and confirm
+they're intentional. Do not proceed to Step 2 until validation passes.
 
 ### Step 2 — Create .trip.js file (default output)
 
@@ -77,6 +85,7 @@ bash "$SKILL_DIR/scripts/create-trip-file.sh" trip-data.json SLUG-YEAR OUTPUT_DI
 ```
 
 Where `SLUG-YEAR` is a short identifier like `lakes-loop-2027` or `coast-weekender-2027`.
+`OUTPUT_DIR` is your private workspace, e.g. `my-trips` (see Step 5 — never `viewer`).
 Output: `OUTPUT_DIR/SLUG-YEAR.trip.js`
 
 ### Step 3 — Regenerate trips.js loader
@@ -106,19 +115,31 @@ that needs no other files to work. The script automatically finds
 Only run this step when the user asks for it. The primary delivery path is
 Steps 2-3 (dynamic loading via trips.js).
 
-### Step 5 — Deliver to workspace
+### Step 5 — Deliver to your private trip workspace
 
-Copy outputs to the user's Vacation Planning folder:
+**Before writing outputs, ensure the workspace exists:** if
+`my-trips/trip-viewer.html` is absent, run `bash scripts/setup-workspace.sh` from
+the repo root. It copies the prebuilt viewer shell from the public `viewer/`
+template into `my-trips/`, so your trips sit next to their own copy of the viewer
+(the loader resolves `trips.js` and each `*.trip.js` by same-folder relative path).
+
+Write the outputs into **`my-trips/`** — your private, gitignored workspace. Use
+`my-trips/` as the `OUTPUT_DIR` in Steps 2–3 so the files land directly on the
+loader's path:
 
 ```
-Vacation Planning/
+my-trips/
+  trip-viewer.html       <- your copy of the shell (from setup-workspace.sh)
   SLUG-YEAR.trip.js      <- new trip data file
   trips.js               <- regenerated loader (references all .trip.js files)
   trip-data.json         <- raw JSON (for future edits or re-export)
 ```
 
-Confirm to the user that opening trip-viewer.html will now show the new trip
-automatically — no rebuild required.
+`viewer/` is the **read-only public template** (it ships the sample trips) — never
+write trips into it. The export scripts reject `viewer/` as an output dir.
+
+Confirm to the user that opening `my-trips/trip-viewer.html` will now show the new
+trip automatically — no rebuild required.
 
 ---
 
@@ -126,15 +147,14 @@ automatically — no rebuild required.
 
 Before delivering, verify:
 
-- [ ] JSON parses without errors
-- [ ] Every stop has a unique `id` in `d{day}-s{stop}` format
-- [ ] Every stop has `coords` (lat/lng)
-- [ ] Every stop has required fields: time, name, mapUrl, placeholderEmoji,
-      description, pricing, status
-- [ ] Cost estimate has all three tiers with a `totals` object
-- [ ] Cost totals sum correctly (category line items = category total = grand total)
-- [ ] Day categories use valid values
+- [ ] `validate-trip.sh` passes with no `FAIL:` lines — this covers JSON validity,
+      required fields, valid enums, unique `d{day}-s{stop}` ids, and cost
+      `totals` = sum of all line items
+- [ ] Reviewed any `WARN:` lines (e.g. stops without `coords`) and confirmed they're
+      intentional — coords are optional and only affect map pins
 - [ ] Day count and stop count match the plan
+- [ ] Output written to your `my-trips/` workspace (`SLUG-YEAR.trip.js`, `trips.js`,
+      `trip-data.json`) — not into the public `viewer/` template
 - [ ] `.trip.js` file loads without JavaScript errors
 - [ ] `trips.js` references all existing `.trip.js` files plus the new one
 

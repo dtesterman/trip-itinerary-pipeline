@@ -1,0 +1,37 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*~
+.*.swp
+
+# LibreOffice / Office lock files
+.~lock.*#
+
+# Backups produced by edit scripts
+*.bak
+*.bak0
+
+# Node (only relevant if you add the viewer's React source later)
+node_modules/
+dist/
+npm-debug.log*
+
+# Local scratch
+/tmp/
+*.log
+
+# ── Private trip workspace ───────────────────────────────────────────────
+# Your authored trips live in my-trips/ and must never be committed back into
+# this template repo. Everything here is ignored EXCEPT the two committed
+# scaffolding files (.gitkeep + README.md) that keep the folder present after
+# a fresh clone. NOTE: use "my-trips/*" (not "my-trips/") — a trailing slash
+# would ignore the directory wholesale and the negations below would not apply.
+my-trips/*
+!my-trips/.gitkeep
+!my-trips/README.md
+
+# Belt-and-suspenders: ignore the raw JSON source anywhere it lands, in case
+# someone authors directly in viewer/ by mistake. (Samples are *.trip.js, never
+# trip-data.json, so this cannot hide a committed sample.)
+trip-data.json
+**/trip-data.json

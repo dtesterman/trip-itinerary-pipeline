@@ -79,8 +79,8 @@ carry three tiers, and `totals` must equal the sum of all line items.
 ```
 trip-itinerary-pipeline/
 ├── README.md
-├── CLAUDE.md                       ← this file
-├── AGENTS.md                       ← same instructions for non-Claude agents (Codex)
+├── AGENTS.md                       ← this file
+├── CLAUDE.md                       ← same instructions for Claude Code
 ├── scripts/
 │   └── setup-workspace.sh          ← bootstraps my-trips/ from the template
 ├── skills/
