@@ -81,23 +81,28 @@ format that pushes onto `window.__TRIPS__`:
 
 ```bash
 SKILL_DIR="<path-to-this-skill>"
-bash "$SKILL_DIR/scripts/create-trip-file.sh" trip-data.json SLUG-YEAR OUTPUT_DIR
+bash "$SKILL_DIR/scripts/create-trip-file.sh" trip-data.json SLUG-YEAR my-trips
 ```
 
 Where `SLUG-YEAR` is a short identifier like `lakes-loop-2027` or `coast-weekender-2027`.
-`OUTPUT_DIR` is your private workspace, e.g. `my-trips` (see Step 5 — never `viewer`).
-Output: `OUTPUT_DIR/SLUG-YEAR.trip.js`
+The output dir (`my-trips`) is **required** — `create-trip-file.sh` has no default and
+will not write to the current directory implicitly. Always pass your private
+workspace (`my-trips`); never `viewer` (the script rejects `viewer/`, and any path
+under it, under every spelling).
+Output: `my-trips/SLUG-YEAR.trip.js`
 
 ### Step 3 — Regenerate trips.js loader
 
 Update the loader so trip-viewer.html discovers the new trip automatically:
 
 ```bash
-bash "$SKILL_DIR/scripts/regenerate-loader.sh" OUTPUT_DIR SLUG-YEAR.trip.js
+bash "$SKILL_DIR/scripts/regenerate-loader.sh" my-trips SLUG-YEAR.trip.js
 ```
 
-The new trip file is placed first in the loader (most recent trip).
-Output: `OUTPUT_DIR/trips.js`
+The new trip file is placed first in the loader (most recent trip). Pass the same
+private workspace (`my-trips`) here; `viewer/` and any subdirectory under it are
+rejected under every spelling.
+Output: `my-trips/trips.js`
 
 ### Step 4 — Create standalone HTML (only on explicit request)
 
