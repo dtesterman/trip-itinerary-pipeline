@@ -8,7 +8,12 @@ set -e
 #   bash scripts/regenerate-loader.sh <output-dir> [newest-trip-file]
 #
 # Example:
-#   bash scripts/regenerate-loader.sh ./trips galena-2026.trip.js
+#   bash scripts/regenerate-loader.sh ./my-trips galena-2026.trip.js
+#
+# Note: the output dir must NOT be the public viewer/ template — the guard below
+# rejects any dir named "viewer". Run scripts/setup-workspace.sh once and use
+# my-trips/ instead. (If no *.trip.js files are present in the target dir, the
+# existing trips.js there is removed — see below.)
 #
 # Output: <output-dir>/trips.js
 
@@ -17,6 +22,14 @@ NEWEST="${2:-}"
 
 if [ ! -d "$OUTPUT_DIR" ]; then
   echo "Error: Directory not found: $OUTPUT_DIR"
+  exit 1
+fi
+
+# Guard: never regenerate the loader inside the public viewer/ template. This sits
+# before the rm -f path below, so it can never delete the committed viewer/trips.js.
+if [ "$(basename "$OUTPUT_DIR")" = "viewer" ]; then
+  echo "Error: viewer/ is the public, read-only template — do not regenerate its loader." >&2
+  echo "  Run 'bash scripts/setup-workspace.sh' once, then use my-trips/ as the output dir." >&2
   exit 1
 fi
 

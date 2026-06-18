@@ -8,7 +8,13 @@ set -e
 #   bash scripts/create-trip-file.sh <trip-data.json> <slug> [output-dir]
 #
 # Example:
-#   bash scripts/create-trip-file.sh galena-trip.json galena-2026 ./trips
+#   bash scripts/create-trip-file.sh galena-trip.json galena-2026 my-trips
+#
+# Tip: run scripts/validate-trip.sh on the JSON first — this script only wraps it.
+#
+# Note: the output dir must NOT be the public viewer/ template (it ships the
+# samples and is read-only). Author trips in my-trips/ instead. The guard below
+# rejects any output dir whose name is "viewer".
 #
 # Output: <output-dir>/<slug>.trip.js
 
@@ -18,6 +24,13 @@ OUTPUT_DIR="${3:-.}"
 
 if [ ! -f "$TRIP_JSON" ]; then
   echo "Error: Trip data file not found: $TRIP_JSON"
+  exit 1
+fi
+
+# Guard: never author trips into the public viewer/ template.
+if [ "$(basename "$OUTPUT_DIR")" = "viewer" ]; then
+  echo "Error: viewer/ is the public, read-only template — do not write trips there." >&2
+  echo "  Run 'bash scripts/setup-workspace.sh' once, then use my-trips/ as the output dir." >&2
   exit 1
 fi
 

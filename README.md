@@ -24,6 +24,11 @@ trip-planner  ──►  trip-exporter  ──►  viewer/trip-viewer.html
 - **`viewer/trip-viewer.html`** — the prebuilt single-file React/Vite app that
   renders the trips. Loads trip data dynamically; never needs rebuilding to add a trip.
 
+> **Public vs. private:** `viewer/` is the immutable public template and ships two
+> sample trips — treat it as read-only reference. **Your trips live in `my-trips/`**,
+> a gitignored workspace you populate with `scripts/setup-workspace.sh`. Never commit
+> your trips back into this template repo.
+
 ## What's in here
 
 ```
@@ -31,11 +36,15 @@ skills/
   trip-planner/SKILL.md
   trip-exporter/SKILL.md  + scripts/  + assets/bundle-shell.html
   shared/SKILL.md         + references/trip-data-schema.md
-viewer/
+viewer/                   PUBLIC TEMPLATE (committed, read-only)
   trip-viewer.html        prebuilt app shell (loads trips.js)
-  trips.js                generated loader
-  *.trip.js               trip data (two sample trips included)
-CLAUDE.md                 project instructions for the AI pipeline
+  trips.js                loader for the samples
+  *.trip.js               two sample trips
+my-trips/                 YOUR private workspace (gitignored)
+  (run scripts/setup-workspace.sh to populate it with the viewer shell)
+scripts/
+  setup-workspace.sh      bootstraps my-trips/ from the template
+CLAUDE.md / AGENTS.md     project instructions for AI agents
 ```
 
 ## Quick start (just view the samples)
@@ -50,17 +59,25 @@ cd viewer
 python3 -m http.server 8000   # then open http://localhost:8000/trip-viewer.html
 ```
 
+**Ready to make your own?** Run `bash scripts/setup-workspace.sh`, then see
+[*Using the skills*](#using-the-skills). Your trips go in `my-trips/`, not `viewer/`.
+
 ## Using the skills
 
 These are Claude skills (compatible with Claude Code / Cowork). Install by making
 the `skills/` directories available to your Claude environment as skills (e.g.,
 place them in your skills directory, or load them as a plugin). Then:
 
+0. **Set up your workspace (once)** — run `bash scripts/setup-workspace.sh`. This
+   copies the viewer shell into your gitignored `my-trips/` folder, where your trips
+   will live.
 1. **Plan** — ask Claude to plan a trip; the `trip-planner` skill guides research
    and produces a schema-valid plan.
 2. **Export** — ask Claude to export it; the `trip-exporter` skill writes the
-   `.trip.js` file and regenerates `trips.js` into your `viewer/` folder.
-3. **View** — open `viewer/trip-viewer.html`.
+   `.trip.js` file and regenerates `trips.js` into your private `my-trips/` workspace
+   (it runs setup automatically if you skipped step 0).
+3. **View** — open `my-trips/trip-viewer.html` (or `viewer/trip-viewer.html` to see
+   the samples).
 
 You don't strictly need Claude — the data format is plain JSON wrapped in a tiny
 JS shim, so you can also author `*.trip.js` files by hand against the schema.
@@ -74,10 +91,12 @@ window.__TRIPS__ = window.__TRIPS__ || [];
 window.__TRIPS__.push({ /* a TripData object — see the schema */ });
 ```
 
-Then regenerate the loader (lists every `*.trip.js`, newest first):
+Place that file in your `my-trips/` workspace (run `bash scripts/setup-workspace.sh`
+first if you haven't), then regenerate the loader (lists every `*.trip.js`, newest
+first):
 
 ```bash
-bash skills/trip-exporter/scripts/regenerate-loader.sh viewer my-trip-2027.trip.js
+bash skills/trip-exporter/scripts/regenerate-loader.sh my-trips my-trip-2027.trip.js
 ```
 
 To produce a single shareable file with one trip embedded:
@@ -107,8 +126,9 @@ Everything flows through `skills/shared/references/trip-data-schema.md`. Key rul
   can't recompile the viewer from here. (A `viewer-builder` skill that does the
   recompile exists in the original project but was intentionally omitted, since
   it requires that source.)
-- The sample trips under `viewer/` are illustrative dummy data — replace them
-  with your own.
+- The sample trips under `viewer/` are a read-only schema demo — don't edit them in
+  place. Create your own in the gitignored `my-trips/` workspace via the pipeline (or
+  by hand).
 - The viewer is a single self-contained HTML file (React, Leaflet, print styles
   inlined); it works offline once loaded.
 
