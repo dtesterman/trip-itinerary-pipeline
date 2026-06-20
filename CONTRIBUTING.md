@@ -73,6 +73,7 @@ The validator checks a subset of important rules including:
 - `dayNumber` sequencing (days must be 1-indexed and contiguous)
 - each day has a non-empty `stops` array (the viewer crashes on a stopless day)
 - stop `id` format `d{day}-s{stopIndex}`
+- `costEstimate` structure (non-empty `categories`, numeric `totals` for all three tiers)
 - cost totals arithmetic (sum of item costs must match `costEstimate.totals`)
 
 If the validator reports errors, fix them locally and re-run until the report is clean.

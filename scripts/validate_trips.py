@@ -67,15 +67,56 @@ def parse_trip_js(path: str) -> dict:
     return json.loads(obj_text)
 
 
-def numeric_sum_category(categories, key: str) -> Tuple[int, int, int]:
-    b = m = h = 0
-    for cat in categories:
-        for item in cat.get('items', []):
-            cost = item.get('cost') or {}
-            b += int(cost.get('budget') or 0)
-            m += int(cost.get('mid') or 0)
-            h += int(cost.get('high') or 0)
-    return b, m, h
+def _fmt_num(n):
+    """Render a tier as an int when it's whole (300 not 300.0), else as-is."""
+    return int(n) if isinstance(n, float) and n.is_integer() else n
+
+
+def _coerce_tier(value):
+    """Return value as a number, or None if it isn't a real numeric tier.
+
+    Bools are rejected (JSON true/false are ints in Python but never valid
+    dollar amounts) and so are strings — the schema requires numbers.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value
+
+
+def numeric_sum_category(categories) -> Tuple[Tuple[float, float, float], list]:
+    """Sum every line item's three cost tiers, collecting structural errors.
+
+    Returns ((budget, mid, high), errors). Each item's `cost` must carry three
+    numeric tiers; a missing/non-numeric tier is reported and treated as 0 so
+    the arithmetic can still be reported alongside the structural error.
+    """
+    b = m = h = 0.0
+    errs = []
+    for ci, cat in enumerate(categories):
+        if not isinstance(cat, dict):
+            errs.append(f"costEstimate.categories[{ci}] is not an object")
+            continue
+        items = cat.get('items')
+        if not isinstance(items, list) or len(items) == 0:
+            errs.append(f"costEstimate.categories[{ci}] has missing or empty 'items'")
+            continue
+        for ii, item in enumerate(items):
+            cost = item.get('cost') if isinstance(item, dict) else None
+            if not isinstance(cost, dict):
+                errs.append(f"categories[{ci}].items[{ii}] missing 'cost' object")
+                continue
+            for tier, acc_name in (('budget', 'b'), ('mid', 'm'), ('high', 'h')):
+                num = _coerce_tier(cost.get(tier))
+                if num is None:
+                    errs.append(f"categories[{ci}].items[{ii}].cost.{tier} is missing or not a number")
+                    num = 0
+                if acc_name == 'b':
+                    b += num
+                elif acc_name == 'm':
+                    m += num
+                else:
+                    h += num
+    return (b, m, h), errs
 
 
 def validate_trip(data: dict, path: str) -> Tuple[bool, list]:
@@ -118,16 +159,46 @@ def validate_trip(data: dict, path: str) -> Tuple[bool, list]:
                     if sf not in stop:
                         errs.append(f"stop {sid} missing field: {sf}")
 
-    # cost totals
-    ce = data.get('costEstimate') or {}
-    cats = ce.get('categories') or []
-    totals = ce.get('totals') or {}
-    calc_b, calc_m, calc_h = numeric_sum_category(cats, 'cost')
-    tb = int(totals.get('budget') or 0)
-    tm = int(totals.get('mid') or 0)
-    th = int(totals.get('high') or 0)
-    if (calc_b, calc_m, calc_h) != (tb, tm, th):
-        errs.append(f"cost totals mismatch: calculated (budget,mid,high)=({calc_b},{calc_m},{calc_h}) vs totals=({tb},{tm},{th})")
+    # cost estimate — require the structure before comparing totals, so a
+    # `costEstimate: {}` (or one missing categories/totals) can't pass as 0 == 0.
+    ce = data.get('costEstimate')
+    if not isinstance(ce, dict):
+        errs.append("costEstimate missing or not an object")
+    else:
+        cats = ce.get('categories')
+        totals = ce.get('totals')
+
+        cats_ok = isinstance(cats, list) and len(cats) > 0
+        if not cats_ok:
+            errs.append("costEstimate.categories missing or empty (must be a non-empty array)")
+
+        # Declared totals: all three tiers must be present and numeric.
+        declared = None
+        if not isinstance(totals, dict):
+            errs.append("costEstimate.totals missing or not an object")
+        else:
+            tier_vals = {}
+            for tier in ('budget', 'mid', 'high'):
+                num = _coerce_tier(totals.get(tier))
+                if num is None:
+                    errs.append(f"costEstimate.totals.{tier} is missing or not a number")
+                else:
+                    tier_vals[tier] = num
+            if len(tier_vals) == 3:
+                declared = (tier_vals['budget'], tier_vals['mid'], tier_vals['high'])
+
+        # Only compare arithmetic once both sides are structurally sound; a
+        # mismatch report is meaningless if the inputs were never valid.
+        if cats_ok and declared is not None:
+            (calc_b, calc_m, calc_h), sum_errs = numeric_sum_category(cats)
+            errs.extend(sum_errs)
+            if not sum_errs and (calc_b, calc_m, calc_h) != declared:
+                calc = tuple(_fmt_num(x) for x in (calc_b, calc_m, calc_h))
+                decl = tuple(_fmt_num(x) for x in declared)
+                errs.append(
+                    f"cost totals mismatch: calculated (budget,mid,high)="
+                    f"({calc[0]},{calc[1]},{calc[2]}) vs totals=({decl[0]},{decl[1]},{decl[2]})"
+                )
 
     return (len(errs) == 0), errs
 
