@@ -59,6 +59,10 @@ cd viewer
 python3 -m http.server 8000   # then open http://localhost:8000/trip-viewer.html
 ```
 
+**Dark mode:** use the toggle in the bottom-right corner to switch between light
+and dark. The viewer starts in light mode and remembers your choice (stored in
+`localStorage`), so it persists across reloads.
+
 **Ready to make your own?** Run `bash scripts/setup-workspace.sh`, then see
 [*Using the skills*](#using-the-skills). Your trips go in `my-trips/`, not `viewer/`.
 

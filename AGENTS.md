@@ -54,6 +54,17 @@ Standalone HTML is only produced on explicit request.
 > repo. You can author and view trips with the prebuilt `trip-viewer.html`
 > as-is; rebuilding the viewer itself would require that source.
 
+> **"Immutable" means no trips, not no features.** The `viewer/` rule is about
+> never writing *trip data* into the template (trips belong in `my-trips/`).
+> Deliberate, reviewed improvements to the template **shell** — e.g. the
+> dark-mode toggle — are committed directly to `trip-viewer.html` via PR. Because
+> the React source is absent, such edits are made to the prebuilt HTML itself:
+> the app uses shadcn-style CSS variables (`:root` light palette, `.dark`
+> overrides) plus a small vanilla `<script>` that toggles the `dark` class on
+> `<html>` and persists the choice in `localStorage` (key `trip-viewer-theme`,
+> default light). Keep such edits to HTML/CSS/standalone scripts — don't try to
+> patch the minified bundle's logic.
+
 ## Authoring trips (where output goes)
 
 Before writing any trip output, ensure the private workspace exists: if
