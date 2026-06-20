@@ -1,14 +1,29 @@
 # Contributing
 
-Thanks for your interest in contributing to the Trip Itinerary Pipeline. This
-document explains the expected workflow for adding trips, running local
-validation, and opening clean pull requests so CI can verify your changes.
+Thanks for your interest in the Trip Itinerary Pipeline. There are **two
+distinct workflows**, and they don't mix:
+
+1. **Authoring your own trips** — a **private, local** activity. Your trips live
+   in `my-trips/`, which is **gitignored by design**. They never get committed,
+   never go into a PR, and never reach CI. You validate and view them locally.
+   This is most people's use of the project. See
+   [*Authoring trips (private & local)*](#authoring-trips-private--local).
+2. **Contributing to the project itself** — changes to the **tooling, template,
+   skills, validator, or docs**. This is what pull requests are for. See
+   [*Contributing changes to the repo (pull requests)*](#contributing-changes-to-the-repo-pull-requests).
+
+> **Why your trips can't be PR'd:** `.gitignore` excludes `my-trips/*` (except the
+> scaffolding `.gitkeep`/`README.md`). A `*.trip.js` placed there is intentionally
+> not tracked by git, so it would be absent from any PR and CI could not see it.
+> This is deliberate — `viewer/` is a public, read-only template and private trips
+> are never committed back into it. Keep and share your trips locally instead.
 
 ## Quick checklist
 
 - Do not edit files in `viewer/` — those are the public, read-only samples.
-- Add trip files into your `my-trips/` workspace (the repo is gitignored there).
-- Run the validator and confirm it passes before opening a PR.
+- Author your trips in `my-trips/` (gitignored) — validate and view them locally;
+  do **not** open a PR for them.
+- Open a PR only for changes to tooling/template/skills/validator/docs.
 - Regenerate the loader only inside `my-trips/` (not `viewer/`).
 
 ## Bootstrap (one-time)
@@ -22,36 +37,39 @@ bash scripts/setup-workspace.sh
 This copies the viewer shell into `my-trips/` so your trips live there and are
 kept private.
 
-## Adding a trip (manual)
+## Authoring trips (private & local)
+
+This stays entirely on your machine — no commit, no PR. Your trips are yours.
+
+### Manual
 
 1. Create a `*.trip.js` file that contains a single `window.__TRIPS__.push({...})`
    call with your `TripData` object (see `skills/shared/references/trip-data-schema.md`).
-2. Place the file in `my-trips/`.
+2. Place the file in `my-trips/` (run `bash scripts/setup-workspace.sh` first if
+   that folder isn't set up yet).
 3. Regenerate the loader in `my-trips/`:
 
 ```bash
 bash skills/trip-exporter/scripts/regenerate-loader.sh my-trips your-trip-file.trip.js
 ```
 
-4. Validate locally (see Validation section below) and open a PR against `main`.
+4. Validate locally (see below) and view by opening `my-trips/trip-viewer.html`
+   in a browser. Done — there's nothing to commit.
 
-## Adding a trip using the exporter skill
+### Using the exporter skill
 
 If you use the `trip-exporter` scripts or the skill to write trips, ensure the
 export target is `my-trips/` and not `viewer/`. The exporter scripts include a
 guard to prevent accidental writes into `viewer/`.
 
-## Validation (required before PR)
+### Validating your trips locally
 
-CI automatically runs `scripts/validate_trips.py` on pushes and PRs to `main`,
-scanning the whole repo so every committed `.trip.js` is validated. Private trips
-in `my-trips/` are gitignored and never reach CI, so validate them locally before
-sharing. Run the validator before opening a PR — pass a directory (searched
+Run the validator against your workspace — pass a directory (searched
 recursively) or a single `.trip.js` file:
 
 ```bash
-python3 scripts/validate_trips.py .          # everything (matches CI)
-python3 scripts/validate_trips.py my-trips   # just your private workspace
+python3 scripts/validate_trips.py my-trips         # your private workspace
+python3 scripts/validate_trips.py my-trips/your-file.trip.js   # a single trip
 ```
 
 If you are editing raw JSON trip data instead of `.trip.js` wrapper files, you can
@@ -78,12 +96,26 @@ The validator checks a subset of important rules including:
 
 If the validator reports errors, fix them locally and re-run until the report is clean.
 
-## PR checklist
+## Contributing changes to the repo (pull requests)
 
-- [ ] Validator passes locally (`scripts/validate_trips.py .`).
-- [ ] `viewer/` samples were not edited.
-- [ ] Loader regenerated only under `my-trips/` if you added trip files.
-- [ ] PR description includes: what changed, why, and which files were added.
+Pull requests are for changes to the **project itself** — the validator, the
+export scripts, the skills, the docs, CI, or the `viewer/` template (sample trips
+and shell). They are **not** for your personal trips, which stay private and local
+(see above). If your "contribution" is only a new `*.trip.js` under `my-trips/`,
+there is nothing to PR — keep it locally.
+
+CI runs `scripts/validate_trips.py .` on pushes and PRs to `main`, scanning the
+whole repo so every committed `.trip.js` (i.e. the `viewer/` samples) stays valid.
+If your change touches those samples or the validator, run the full scan locally
+first.
+
+### PR checklist
+
+- [ ] Full validation passes locally (`python3 scripts/validate_trips.py .`).
+- [ ] `viewer/` samples weren't changed unintentionally (and if changed on
+      purpose, they still validate).
+- [ ] No private trips or `my-trips/` contents were committed.
+- [ ] PR description includes: what changed, why, and which files were touched.
 
 ## Troubleshooting
 
@@ -93,10 +125,13 @@ If the validator reports errors, fix them locally and re-run until the report is
 
 ## Style and etiquette
 
-- Keep commits focused and small. One trip per PR is ideal for reviewability.
+- Keep commits focused and small — one logical change per PR is ideal for
+  reviewability.
 - Use clear commit messages and a descriptive PR title.
 
 ## Contact
 
-If you're unsure about schema fields or need help adding a trip, open an issue
-or mention the maintainers listed in the repository metadata.
+If you're unsure about schema fields or need help authoring a trip, open an issue
+or mention the maintainers listed in the repository metadata. (Remember: trips
+themselves stay in your local `my-trips/` — issues are for questions, not for
+submitting trip files.)
