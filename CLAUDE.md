@@ -62,6 +62,35 @@ all trip files (`SLUG-YEAR.trip.js`, `trips.js`, `trip-data.json`) into `my-trip
 — never into the public `viewer/` template. The export scripts reject `viewer/` as
 an output dir.
 
+## Validating trips (do this after every export or edit)
+
+You cannot open a browser, so **validation is your definition of done** — a clean
+validator run is the strongest proof a trip is well-formed and will render. After
+writing or editing any `.trip.js`, run the validator and only report success if it
+exits `0`:
+
+```bash
+python3 scripts/validate_trips.py my-trips      # check the trips you just wrote
+python3 scripts/validate_trips.py .             # check everything (what CI runs)
+```
+
+A path may be a directory (searched recursively) or a single `.trip.js` file.
+The validator checks: required top-level fields; 1-indexed, contiguous
+`dayNumber`s; stop IDs in `d{day}-s{stopIndex}` form; and that
+`costEstimate.totals` equals the sum of all line items. Exit codes: `0` = all
+valid, `1` = no trip files found at the given path, `2` = validation errors (the
+errors are printed — fix them and re-run until clean).
+
+After exporting, also confirm `trips.js` registers the new file (a
+`document.write('<script src="SLUG-YEAR.trip.js">')` line) so the viewer will load
+it. Regenerate the loader with `skills/trip-exporter/scripts/regenerate-loader.sh`
+rather than hand-editing it.
+
+> **The samples vs. CI:** CI (`.github/workflows/validate-trips.yml`) validates
+> every committed `.trip.js` across the repo. Trips you author in `my-trips/` are
+> gitignored and never reach CI, so validating them locally is the only check they
+> get — don't skip it.
+
 ## Shared Schema (the interface contract)
 
 `skills/shared/references/trip-data-schema.md` defines the TripData types,
@@ -81,8 +110,13 @@ trip-itinerary-pipeline/
 ├── README.md
 ├── CLAUDE.md                       ← this file
 ├── AGENTS.md                       ← same instructions for non-Claude agents (Codex)
+├── CONTRIBUTING.md                 ← human contributor workflow
+├── .github/workflows/
+│   └── validate-trips.yml          ← CI: validates every committed *.trip.js
 ├── scripts/
-│   └── setup-workspace.sh          ← bootstraps my-trips/ from the template
+│   ├── setup-workspace.sh          ← bootstraps my-trips/ from the template
+│   ├── validate_trips.py           ← trip validator (run after every export/edit)
+│   └── validate_trips.ps1          ← Windows wrapper for validate_trips.py
 ├── skills/
 │   ├── trip-planner/SKILL.md
 │   ├── trip-exporter/
@@ -109,8 +143,10 @@ trip-itinerary-pipeline/
 | Export a finished plan           | `trip-exporter` (writes into `my-trips/`)    |
 | Make a standalone HTML to share  | `trip-exporter` (ask for standalone)         |
 | Change data in an existing trip  | Edit the `my-trips/*.trip.js` file directly  |
-| View my trips                    | Open `my-trips/trip-viewer.html`             |
-| View the bundled samples         | Open `viewer/trip-viewer.html`               |
+| Verify a trip is valid (done?)   | `python3 scripts/validate_trips.py my-trips` (exit 0 = OK) |
+| Check everything (as CI does)    | `python3 scripts/validate_trips.py .`        |
+| Let a human view my trips        | Tell them to open `my-trips/trip-viewer.html` in a browser |
+| Let a human view the samples     | Tell them to open `viewer/trip-viewer.html` in a browser |
 
 The `viewer/` folder ships with two **sample trips** as a read-only schema demo.
 Don't replace them in place — author your own in the gitignored `my-trips/`

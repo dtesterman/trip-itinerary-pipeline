@@ -6,11 +6,11 @@ offline-friendly trip viewer**. It's built as a set of [Claude](https://claude.c
 shared schema acting as the interface contract between stages.
 
 ```
-trip-planner  ──►  trip-exporter  ──►  viewer/trip-viewer.html
+trip-planner  ──►  trip-exporter  ──►  my-trips/trip-viewer.html
  (research+plan)    (serialize)         (render)
-        \              |                   ▲
-         \   skills/shared/references/trip-data-schema.md  (the contract)
-          \__________ /
+   \              |                   ▲
+    \   skills/shared/references/trip-data-schema.md  (the contract)
+     \__________ /
 ```
 
 - **`trip-planner`** (skill) — research + planning. Produces a complete plan and
@@ -61,6 +61,9 @@ python3 -m http.server 8000   # then open http://localhost:8000/trip-viewer.html
 
 **Ready to make your own?** Run `bash scripts/setup-workspace.sh`, then see
 [*Using the skills*](#using-the-skills). Your trips go in `my-trips/`, not `viewer/`.
+
+The export scripts require an explicit output directory and will reject
+`viewer/` or any path under it, so use `my-trips/` as the export target.
 
 ## Using the skills
 
@@ -131,6 +134,32 @@ Everything flows through `skills/shared/references/trip-data-schema.md`. Key rul
   by hand).
 - The viewer is a single self-contained HTML file (React, Leaflet, print styles
   inlined); it works offline once loaded.
+
+## CI and local validation
+
+- **GitHub Actions:** A workflow at `.github/workflows/validate-trips.yml` runs
+  `scripts/validate_trips.py` on push and pull requests to `main`. It scans the
+  whole repo, so **every committed `.trip.js`** is validated — the public samples
+  in `viewer/` plus any trip committed elsewhere. (Private trips in `my-trips/`
+  are gitignored and never reach CI, so they aren't checked there; validate them
+  locally before sharing.)
+- **Raw JSON validation:** For plain `trip-data.json` artifacts, the repo also
+  includes `skills/trip-exporter/scripts/validate-trip.sh`, which validates the
+  raw JSON contract.
+- **Run locally (Python):** pass any directory (searched recursively) or a single
+  `.trip.js` file. To check your own trips, point it at `my-trips/`:
+
+```bash
+python3 scripts/validate_trips.py .          # everything (what CI runs)
+python3 scripts/validate_trips.py my-trips   # just your private workspace
+```
+
+- **Run locally (PowerShell on Windows):**
+
+```powershell
+.\scripts\validate_trips.ps1
+```
+
 
 ## Credits
 

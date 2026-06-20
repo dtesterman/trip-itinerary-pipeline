@@ -1,0 +1,29 @@
+name: Validate Trips
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Run trip validator
+        # Scan the whole repo so any committed *.trip.js is validated — the
+        # public samples in viewer/ plus any trip a contributor commits
+        # elsewhere. (Private trips in my-trips/ are gitignored and never reach
+        # CI, so they cannot be checked here by design.)
+        run: python scripts/validate_trips.py .
