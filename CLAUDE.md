@@ -4,10 +4,13 @@ This project turns vacation plans into an interactive, self-contained trip
 viewer. Work follows a two-stage authoring pipeline backed by a shared schema,
 plus a prebuilt viewer that renders the result.
 
-> **Public vs. private:** `viewer/` is the immutable public template (read-only
-> reference; it ships the sample trips). **Your trips live in `my-trips/`**, a
-> gitignored workspace populated by `scripts/setup-workspace.sh`. Never write trips
-> into `viewer/`, and never commit private trips back into this template repo.
+> **Public vs. private:** `viewer/` is the public template that ships the sample
+> trips — **read-only for end users** (the repo owner and owner-approved
+> contributors may edit the template itself; see *The Viewer* below). **Your trips
+> live in `my-trips/`**, a gitignored workspace populated by
+> `scripts/setup-workspace.sh`. Regardless of role, never write trips into
+> `viewer/`, and never commit private trips back into this template repo — trip
+> *data* always belongs in `my-trips/`.
 
 ## The Pipeline
 
@@ -54,16 +57,18 @@ Standalone HTML is only produced on explicit request.
 > repo. You can author and view trips with the prebuilt `trip-viewer.html`
 > as-is; rebuilding the viewer itself would require that source.
 
-> **"Immutable" means no trips, not no features.** The `viewer/` rule is about
-> never writing *trip data* into the template (trips belong in `my-trips/`).
-> Deliberate, reviewed improvements to the template **shell** — e.g. the
-> dark-mode toggle — are committed directly to `trip-viewer.html` via PR. Because
-> the React source is absent, such edits are made to the prebuilt HTML itself:
-> the app uses shadcn-style CSS variables (`:root` light palette, `.dark`
-> overrides) plus a small vanilla `<script>` that toggles the `dark` class on
-> `<html>` and persists the choice in `localStorage` (key `trip-viewer-theme`,
-> default light). Keep such edits to HTML/CSS/standalone scripts — don't try to
-> patch the minified bundle's logic.
+> **Who may edit `viewer/`.** "Read-only" is a boundary for **end users** of this
+> template: they author trips in `my-trips/` and never modify `viewer/`. The
+> **repo owner** (and anyone the owner explicitly approves) may edit the template
+> itself, including the prebuilt `trip-viewer.html`. If you are acting for the
+> owner, treat `viewer/` as editable; otherwise treat it as read-only.
+>
+> Because the React source is absent, owner edits to the template are made to the
+> prebuilt HTML directly. Example: the dark-mode toggle. The app uses shadcn-style
+> CSS variables (`:root` light palette, `.dark` overrides) plus a small vanilla
+> `<script>` that toggles the `dark` class on `<html>` and persists the choice in
+> `localStorage` (key `trip-viewer-theme`, default light). Keep such edits to
+> HTML/CSS/standalone scripts — don't try to patch the minified bundle's logic.
 
 ## Authoring trips (where output goes)
 
