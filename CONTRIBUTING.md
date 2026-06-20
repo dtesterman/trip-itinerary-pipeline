@@ -71,6 +71,7 @@ The validator checks a subset of important rules including:
 
 - top-level required fields (`name`, `dates`, `travelers`, `airports`, `days`, `costEstimate`)
 - `dayNumber` sequencing (days must be 1-indexed and contiguous)
+- each day has a non-empty `stops` array (the viewer crashes on a stopless day)
 - stop `id` format `d{day}-s{stopIndex}`
 - cost totals arithmetic (sum of item costs must match `costEstimate.totals`)
 

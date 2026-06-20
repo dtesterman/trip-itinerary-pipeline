@@ -100,7 +100,14 @@ def validate_trip(data: dict, path: str) -> Tuple[bool, list]:
             dn = day.get('dayNumber')
             if dn != idx:
                 errs.append(f"day #{idx} has dayNumber={dn} (expected {idx})")
-            stops = day.get('stops') or []
+            # `stops` is required and must be a non-empty array. The viewer
+            # dereferences day.stops.length and maps over day.stops while
+            # rendering, so a missing/empty stops list passes silently here but
+            # crashes (missing) or renders a blank day (empty) in the viewer.
+            stops = day.get('stops')
+            if not isinstance(stops, list) or len(stops) == 0:
+                errs.append(f"day #{idx} has missing or empty 'stops' (must be a non-empty array)")
+                stops = []
             for sidx, stop in enumerate(stops, start=1):
                 sid = stop.get('id')
                 expected = f"d{idx}-s{sidx}"
