@@ -158,15 +158,40 @@ Apply the pickup buffer for the chosen mode, which pushes back the first real st
   **~15 min**.
 
 **Phase 3 — Destination departure, mode-aware** (trailing stops of the `departure` day).
-Work backward from the flight: arrive at the airport by departure − buffer (2h / 3h),
-then add the mode's return process and the travel time **from the last itinerary entry**:
-- 🚗 **Drive to {airport}** — `time` = last entry + travel-to-airport time. *Skip when
-  rideshare-only* — the rideshare itself is the trip to the airport.
-- Rental → 🚗 **Return rental car** — add a **30-min** drop-off buffer before the airport
-  deadline. · Turo → 🚙 **Return Turo** — reverse of arrival: drive to the remote lot →
-  **~10-min check-out** → **shuttle back to the terminal**, default **~45–60 min** total,
-  *before* the pre-flight buffer. · Rideshare → 🚕 **Rideshare to {airport}** — pickup wait.
+This phase is computed **backward from the flight, not forward from the last activity** —
+forward addition silently produces an infeasible chain when the last activity runs long.
+
+First compute the **latest-leave cutoff** — the latest the traveler can leave the last
+itinerary stop and still make the flight:
+
+```
+cutoff = flight departure
+         − pre-flight buffer (2h domestic / 3h international)
+         − return/drop-off buffer (mode-dependent, see below)
+         − travel-to-airport time (from the last stop)
+```
+
+**Constrain the last real activity to end by `cutoff`.** If the planned itinerary would
+run past it, trim or drop the final activity so it ends on or before the cutoff, and call
+this out in the plan (e.g., "last stop must wrap by 1:30 PM to make the 5:00 PM flight").
+Then lay the return stops forward *from the cutoff* — every time below derives from the
+flight deadline, so the chain is feasible by construction:
+
+- 🚗 **Drive to {airport}** — `time` = `cutoff` (i.e. leave the last stop right at the
+  cutoff). Arrives at the return/drop-off point by `cutoff` + travel-to-airport time.
+  *Skip when rideshare-only* — the rideshare itself is the trip to the airport, so its
+  `time` is the cutoff.
+- Mode return/drop-off buffer (the value subtracted above):
+  - Rental → 🚗 **Return rental car** — **30-min** drop-off buffer before the airport
+    deadline.
+  - Turo → 🚙 **Return Turo** — reverse of arrival: drive to the remote lot → **~10-min
+    check-out** → **shuttle back to the terminal**, default **~45–60 min** total.
+  - Rideshare → 🚕 **Rideshare to {airport}** — pickup wait, default **~15 min**.
 - ✈️ **Arrive {airport}** — `time` = flight departure − buffer (2h / 3h).
+
+Sanity check: the ✈️ arrive-airport `time` must be **≥** the return-stop `time` and
+**≤** flight departure. If it isn't, the cutoff was miscomputed or the last activity still
+runs too late — fix the itinerary, don't ship a chain that lands after the flight.
 
 **Phase 4 — Return, home side:**
 - 🏠 **Arrive home** — `time` = flight arrival + airport-to-home travel time.
@@ -207,8 +232,10 @@ Before declaring the plan complete, verify:
       park/rideshare → arrive home airport) and the destination pickup stop, with times
       back-calculated from the flight and the pre-flight buffer (2h domestic / 3h intl)
 - [ ] Departure day ends with the destination return chain (drive to airport / return
-      car or Turo / rideshare → arrive airport → arrive home), times computed from the
-      last itinerary entry, the mode's return buffer, and the pre-flight buffer
+      car or Turo / rideshare → arrive airport → arrive home), with the last activity
+      constrained to end by the latest-leave cutoff (flight departure − pre-flight buffer
+      − return/drop-off buffer − travel-to-airport time); confirm arrive-airport time is
+      ≥ the return-stop time and ≤ flight departure
 - [ ] Day categories use valid values (travel, history, nature, driving, mixed, departure)
 - [ ] Cost estimates have all three tiers (budget, mid, high)
 - [ ] Cost totals sum correctly
