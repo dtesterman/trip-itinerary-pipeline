@@ -24,10 +24,10 @@ trip-planner  ──►  trip-exporter  ──►  my-trips/trip-viewer.html
 - **`viewer/trip-viewer.html`** — the prebuilt single-file React/Vite app that
   renders the trips. Loads trip data dynamically; never needs rebuilding to add a trip.
 
-> **Public vs. private:** `viewer/` is the immutable public template and ships two
-> sample trips — treat it as read-only reference. **Your trips live in `my-trips/`**,
-> a gitignored workspace you populate with `scripts/setup-workspace.sh`. Never commit
-> your trips back into this template repo.
+> **Public vs. private:** `viewer/` is the public template and ships two sample
+> trips — treat it as read-only reference (it's maintained by the repo owner).
+> **Your trips live in `my-trips/`**, a gitignored workspace you populate with
+> `scripts/setup-workspace.sh`. Never commit your trips back into this template repo.
 
 ## What's in here
 
@@ -58,6 +58,10 @@ browser blocks local scripts, serve the folder instead:
 cd viewer
 python3 -m http.server 8000   # then open http://localhost:8000/trip-viewer.html
 ```
+
+**Dark mode:** use the toggle in the bottom-right corner to switch between light
+and dark. The viewer starts in light mode and remembers your choice (stored in
+`localStorage`), so it persists across reloads.
 
 **Ready to make your own?** Run `bash scripts/setup-workspace.sh`, then see
 [*Using the skills*](#using-the-skills). Your trips go in `my-trips/`, not `viewer/`.
