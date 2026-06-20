@@ -51,6 +51,16 @@ establish constraints, then research within those bounds.
 - Lodging preferences and constraints (timeshare availability, B&B vs. hotel)
 - Any must-see stops or activities
 - Any must-avoid activities or foods
+- **Home location** — always ask. It's used to *estimate* door-to-airport travel time
+  for both legs (home → home airport, and arrival airport → home on the return). Be
+  explicit about what the estimate can and can't do: it's a **rough distance-based
+  estimate, not live or time-of-day traffic routing**. Invite the traveler to **supply a
+  known door-to-airport travel time instead** — a supplied time always takes precedence.
+- **Home-airport mode** — will they **park at the home airport or use rideshare** to get
+  there? Drives the home-side logistics stops and their cost.
+- **Destination ground-transport mode** — **rental car, Turo, or rideshare (Uber/Lyft)**?
+  A separate decision from the home-airport mode. Drives the destination pickup/return
+  stops and the buffers folded into destination arrival and departure times.
 
 ### Research Destinations
 
@@ -113,12 +123,64 @@ For each stop, capture:
 - Put restaurants at natural meal times
 - Balance activity density — don't pack 10 stops into one day and 2 into the next
 
+### Airport & Travel-Day Routing
+
+A trip doesn't begin at the destination airport — it begins at the traveler's front
+door. Model the full chain to and from home as ordinary **stops** (existing fields: name,
+`placeholderEmoji`, `time`, `pricing`), back-calculated from the flight times so nothing
+is missed. These are normal stops — keep ids 1-indexed and contiguous (`d{day}-s{stop}`).
+
+**Pre-flight buffer.** Arrive at the airport **2 hours before a domestic flight, 3 hours
+before an international flight**. Determine domestic vs. international from the
+origin/destination airports (international if the trip crosses a national border).
+
+**Door-to-airport time.** Estimate it from the traveler's home location (rough,
+distance-based — say so), or use a traveler-supplied time when given. Whichever value you
+use, **state it in the plan** (e.g., "assuming ~40 min to DFW") so it stays visible and
+the traveler can override it.
+
+Build the chain in four phases (omit stops that don't apply to the chosen modes):
+
+**Phase 1 — Outbound, home side** (leading stops of Day 1, the `travel` day):
+- 🏠 **Depart home** — `time` = flight departure − buffer − door-to-airport time.
+- 🅿️ **Park at {home airport}** *or* 🚕 **Rideshare to {home airport}** — carry the
+  parking/rideshare cost on the stop's `pricing` (home-airport mode).
+- ✈️ **Arrive {home airport}** — `time` = flight departure − buffer (2h / 3h).
+
+**Phase 2 — Destination arrival, mode-aware** (after the destination ✈️ arrival stop).
+Apply the pickup buffer for the chosen mode, which pushes back the first real stop:
+- Rental car → 🚗 **Pick up rental car** — counter/queue buffer, default **~45 min**.
+- Turo → 🚙 **Pick up Turo** — at a major airport this is a multi-step **remote-lot
+  shuttle** process: locate/wait for the shuttle → ride to the lot → **~10-min
+  check-in/inspection** → drive off. Default **~45–60 min** (shuttle + locate time
+  dominates; the check-in itself is only ~10 min).
+- Rideshare → 🚕 **Rideshare to {first stop / lodging}** — pickup-zone wait, default
+  **~15 min**.
+
+**Phase 3 — Destination departure, mode-aware** (trailing stops of the `departure` day).
+Work backward from the flight: arrive at the airport by departure − buffer (2h / 3h),
+then add the mode's return process and the travel time **from the last itinerary entry**:
+- 🚗 **Drive to {airport}** — `time` = last entry + travel-to-airport time. *Skip when
+  rideshare-only* — the rideshare itself is the trip to the airport.
+- Rental → 🚗 **Return rental car** — add a **30-min** drop-off buffer before the airport
+  deadline. · Turo → 🚙 **Return Turo** — reverse of arrival: drive to the remote lot →
+  **~10-min check-out** → **shuttle back to the terminal**, default **~45–60 min** total,
+  *before* the pre-flight buffer. · Rideshare → 🚕 **Rideshare to {airport}** — pickup wait.
+- ✈️ **Arrive {airport}** — `time` = flight departure − buffer (2h / 3h).
+
+**Phase 4 — Return, home side:**
+- 🏠 **Arrive home** — `time` = flight arrival + airport-to-home travel time.
+
+All buffer values above are **defaults — state them and let the traveler adjust.**
+
 ### Cost Estimation
 
 Build a cost estimate with three tiers (budget, mid, high) covering:
 
 - Flights (if applicable)
-- Ground transportation (rental car, gas, taxi/rideshare)
+- Ground transportation (rental car/Turo, gas, taxi/rideshare, **home-airport parking or
+  rideshare**) — reflect the `pricing` from the Phase 1–3 logistics stops here as line
+  items so the totals stay complete
 - Lodging (per night, noting timeshare savings if applicable)
 - Attractions (per person, confirmed vs. estimated pricing)
 - Dining (breakfast, lunch, dinner by day count)
@@ -141,6 +203,12 @@ Before declaring the plan complete, verify:
 
 - [ ] Every stop has: name, time, emoji, description, pricing, approximate coords
 - [ ] Every day has: title, subtitle, category, tip
+- [ ] Travel day (Day 1) leads with the home-side outbound stops (depart home →
+      park/rideshare → arrive home airport) and the destination pickup stop, with times
+      back-calculated from the flight and the pre-flight buffer (2h domestic / 3h intl)
+- [ ] Departure day ends with the destination return chain (drive to airport / return
+      car or Turo / rideshare → arrive airport → arrive home), times computed from the
+      last itinerary entry, the mode's return buffer, and the pre-flight buffer
 - [ ] Day categories use valid values (travel, history, nature, driving, mixed, departure)
 - [ ] Cost estimates have all three tiers (budget, mid, high)
 - [ ] Cost totals sum correctly

@@ -60,6 +60,11 @@ Key rules:
 - **Day categories** must be one of: `travel`, `history`, `nature`, `driving`,
   `mixed`, `departure`
 - **Stop status** should be `planned` for new trips
+- **Travel-day logistics stops** (depart home, airport parking/rideshare, rental/Turo
+  pickup & return, arrive home) are ordinary stops — preserve them as-is using the same
+  `id`/emoji conventions (see the "Travel-day logistics stops" note in the schema
+  reference); their parking/rideshare/rental costs belong in the "Ground transportation"
+  cost category
 
 Validate the JSON against the schema contract **before** wrapping it. This checks
 required fields, valid enum values (`category`, `pricing.type`, `status`,

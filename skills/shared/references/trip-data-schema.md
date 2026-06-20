@@ -146,6 +146,27 @@ interface StopLodging {
 type LodgingType = "primary" | "away";
 ```
 
+### Travel-day logistics stops (convention)
+
+Travel days carry the door-to-door logistics as ordinary stops — there is **no special
+`Stop` type**; they are distinguished only by `name` + `placeholderEmoji` + `time`, and
+they validate like any other stop. The `trip-planner` skill back-calculates their times
+from the flight and a pre-flight buffer (2h domestic / 3h international). Conventional set:
+
+| Stop                         | Emoji | When |
+|------------------------------|-------|------|
+| Depart home                  | 🏠    | First stop of Day 1 |
+| Park at home airport         | 🅿️    | Outbound, if parking |
+| Rideshare to/from airport    | 🚕    | Outbound/return, if rideshare |
+| Arrive at airport            | ✈️    | Both ends (pre-flight buffer) |
+| Pick up / return rental car  | 🚗    | Destination, if renting |
+| Pick up / return Turo        | 🚙    | Destination, if Turo (remote-lot shuttle) |
+| Arrive home                  | 🏠    | Last stop of the departure day |
+
+Costs for these (parking, rideshare, rental/Turo) belong in the `costEstimate` "Ground
+transportation" category as line items — the stop `pricing` is display-only and is **not**
+auto-summed into `totals`.
+
 ---
 
 ## CostEstimate
@@ -200,6 +221,9 @@ interface CostLineItem {
 |---------------|-------|
 | Airport       | ✈️    |
 | Rental car    | 🚗    |
+| Turo          | 🚙    |
+| Rideshare/taxi| 🚕    |
+| Airport parking| 🅿️   |
 | Driving       | 🚗    |
 | Hotel/lodging | 🏨    |
 | Restaurant    | 🍽️    |
@@ -216,7 +240,7 @@ interface CostLineItem {
 | Coffee/café   | ☕    |
 | Bar/brewery   | 🍺    |
 | Entertainment | 🎭    |
-| Departure     | 🏠    |
+| Home (depart/arrive) | 🏠 |
 
 ---
 
@@ -232,6 +256,22 @@ interface CostLineItem {
   "description": "Arrive at Terminal 1 or 2 depending on carrier. Rental car counters are in the Multi-Modal Facility.",
   "pricing": { "amount": "$0", "type": "free" },
   "coords": { "lat": 41.9742, "lng": -87.9073 },
+  "status": "planned"
+}
+```
+
+## Example: Pre-Departure Logistics Stop
+
+```json
+{
+  "id": "d1-s2",
+  "time": "6:00 AM",
+  "name": "Park at DFW (Terminal Parking)",
+  "mapUrl": "https://maps.google.com/maps/search/DFW+Terminal+Parking",
+  "placeholderEmoji": "🅿️",
+  "description": "Park and shuttle/walk to the terminal. Arrive ~2h before the 8:00 AM domestic departure.",
+  "pricing": { "amount": "$24/day", "type": "estimated" },
+  "coords": { "lat": 32.8998, "lng": -97.0403 },
   "status": "planned"
 }
 ```
