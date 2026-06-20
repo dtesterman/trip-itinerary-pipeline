@@ -75,11 +75,14 @@ python3 scripts/validate_trips.py .             # check everything (what CI runs
 ```
 
 A path may be a directory (searched recursively) or a single `.trip.js` file.
-The validator checks: required top-level fields; 1-indexed, contiguous
-`dayNumber`s; every day has a non-empty `stops` array (the viewer crashes on a
-day with no stops); stop IDs in `d{day}-s{stopIndex}` form; that `costEstimate`
-carries non-empty `categories` and numeric `totals` for all three tiers; and that
-`costEstimate.totals` equals the sum of all line items. Exit codes: `0` = all
+The validator checks: required top-level fields (with `dates` and `airports`
+present as objects carrying `start`/`end` and `flyIn`/`flyOut`); each day's
+required fields (`title`, `subtitle`, `category`, `tip`) and a valid `category`
+enum; 1-indexed, contiguous `dayNumber`s; every day has a non-empty `stops` array
+(the viewer crashes on a day with no stops); stop IDs in `d{day}-s{stopIndex}`
+form and required stop fields; that `costEstimate` carries non-empty `categories`
+and numeric `totals` for all three tiers; and that `costEstimate.totals` equals
+the sum of all line items. Exit codes: `0` = all
 valid, `1` = no trip files found at the given path, `2` = validation errors (the
 errors are printed — fix them and re-run until clean).
 

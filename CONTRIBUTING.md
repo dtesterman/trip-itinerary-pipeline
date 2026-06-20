@@ -88,9 +88,11 @@ On Windows (PowerShell):
 The validator checks a subset of important rules including:
 
 - top-level required fields (`name`, `dates`, `travelers`, `airports`, `days`, `costEstimate`)
+- `dates` is an object with `start`/`end`; `airports` is an object with `flyIn`/`flyOut`
+- each day's required fields (`title`, `subtitle`, `category`, `tip`) and a valid `category` value
 - `dayNumber` sequencing (days must be 1-indexed and contiguous)
 - each day has a non-empty `stops` array (the viewer crashes on a stopless day)
-- stop `id` format `d{day}-s{stopIndex}`
+- stop `id` format `d{day}-s{stopIndex}` and required stop fields
 - `costEstimate` structure (non-empty `categories`, numeric `totals` for all three tiers)
 - cost totals arithmetic (sum of item costs must match `costEstimate.totals`)
 

@@ -20,6 +20,9 @@ import sys
 from glob import glob
 from typing import Tuple
 
+# Valid Day.category values, per the TripData schema.
+DAY_CATEGORIES = ('travel', 'history', 'nature', 'driving', 'mixed', 'departure')
+
 
 def extract_json_object_from_js(text: str) -> str:
     # Find the first occurrence of window.__TRIPS__.push( and capture the
@@ -126,11 +129,27 @@ def validate_trip(data: dict, path: str) -> Tuple[bool, list]:
         if f not in data:
             errs.append(f"missing top-level field: {f}")
 
-    # dates
-    dates = data.get('dates') or {}
-    for d in ('start', 'end'):
-        if d not in dates:
-            errs.append(f"dates.{d} missing")
+    # dates — must be an object carrying both required date strings.
+    dates = data.get('dates')
+    if not isinstance(dates, dict):
+        if 'dates' in data:  # presence already reported above if absent
+            errs.append("dates must be an object with 'start' and 'end'")
+    else:
+        for d in ('start', 'end'):
+            if d not in dates:
+                errs.append(f"dates.{d} missing")
+
+    # airports — must be an object carrying both required IATA codes. (Required
+    # by the schema but previously only checked for top-level presence, so an
+    # `airports: {}` slipped through with no flyIn/flyOut.)
+    airports = data.get('airports')
+    if not isinstance(airports, dict):
+        if 'airports' in data:
+            errs.append("airports must be an object with 'flyIn' and 'flyOut'")
+    else:
+        for a in ('flyIn', 'flyOut'):
+            if a not in airports:
+                errs.append(f"airports.{a} missing")
 
     # days
     days = data.get('days') or []
@@ -141,6 +160,17 @@ def validate_trip(data: dict, path: str) -> Tuple[bool, list]:
             dn = day.get('dayNumber')
             if dn != idx:
                 errs.append(f"day #{idx} has dayNumber={dn} (expected {idx})")
+            # Required Day fields beyond dayNumber/stops (previously unchecked).
+            for df in ('title', 'subtitle', 'category', 'tip'):
+                if df not in day:
+                    errs.append(f"day #{idx} missing field: {df}")
+            # category, when present, must be one of the schema's enum values.
+            cat = day.get('category')
+            if cat is not None and cat not in DAY_CATEGORIES:
+                errs.append(
+                    f"day #{idx} has invalid category {cat!r} "
+                    f"(must be one of: {', '.join(DAY_CATEGORIES)})"
+                )
             # `stops` is required and must be a non-empty array. The viewer
             # dereferences day.stops.length and maps over day.stops while
             # rendering, so a missing/empty stops list passes silently here but
