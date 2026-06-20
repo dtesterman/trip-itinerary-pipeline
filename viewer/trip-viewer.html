@@ -363,10 +363,15 @@ Error generating stack: `+e.message+`
         outline-offset: 2px;
       }
       #theme-toggle .theme-toggle-icon { font-size: 1rem; line-height: 1; }
+      /* Secondary print guard for non-React print paths. The primary guard is
+         the button's data-no-print attribute, which is hidden by the rule in
+         #print-styles — the one stylesheet the React print hook keeps active
+         (it sets media="screen" on every other <style>, which would otherwise
+         disable this very rule). */
       @media print { #theme-toggle { display: none !important; } }
     </style>
     <button id="theme-toggle" type="button" aria-pressed="false"
-            title="Toggle dark mode">
+            data-no-print title="Toggle dark mode">
       <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
       <span class="theme-toggle-label">Dark</span>
     </button>
